@@ -26,8 +26,15 @@ from .metrics import (
 )
 from .sample import RetrievalSample
 from .diagnose import OracleCeiling, SanityReport, oracle_ceiling, sanity_report
+from .regression import (
+    MetricDelta,
+    PerQueryDelta,
+    RegressionReport,
+    detect_regression,
+    from_eval_json,
+)
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     # data model
@@ -46,5 +53,11 @@ __all__ = [
     "sanity_report",
     "OracleCeiling",
     "SanityReport",
+    # regression detection (v0.2)
+    "detect_regression",
+    "from_eval_json",
+    "RegressionReport",
+    "MetricDelta",
+    "PerQueryDelta",
     "__version__",
 ]
