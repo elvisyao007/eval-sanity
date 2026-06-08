@@ -10,7 +10,7 @@ The most common retrieval metric, **proportion recall@k** (`relevant-found / rel
 
 On a multi-answer dataset this means your averaged recall can look like a retrieval failure when it is really a **metric artifact**. `hit@k` (did *any* relevant doc land in the top-k?) does not have this defect. eval-sanity makes the gap between the two visible and tells you, in one sentence, what fraction of your dataset cannot pass your threshold even under perfect retrieval.
 
-> This is the productized version of a finding from blog-03 ([BLOG-03-URL]): on a multi-answer Japanese QA set, ~1/3 of queries were structurally unable to clear a recall threshold that *perfect* retrieval could not have cleared.
+> This is the productized version of a finding from blog-03 ([https://dev.to/elvisyao007/the-33-grounded-but-wrong-answers-were-a-metric-artifact-how-id-based-context-recall-lies-on-ghg]): on a multi-answer Japanese QA set, ~1/3 of queries were structurally unable to clear a recall threshold that *perfect* retrieval could not have cleared.
 
 ## Install
 
