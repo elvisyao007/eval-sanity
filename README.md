@@ -59,6 +59,54 @@ Run it yourself:
 python examples/demo.py
 ```
 
+## Detecting silent regressions (v0.2)
+
+A *silent regression* is the one your dashboard misses: retrieval quality drops by a real, measurable amount, but the generation-side score (faithfulness) barely moves — the model keeps writing fluent, grounded-sounding answers from the now-wrong context. A faithfulness-only dashboard stays green while the retriever rots.
+
+`detect_regression` compares two eval runs and flags exactly this. Every metric delta carries a **95% confidence interval from a paired bootstrap** (seed 42, 10 000 resamples — re-runs are bit-for-bit identical), so the verdict is statistical, never a bare threshold. The alarm fires *only* when retrieval significantly drops **and** generation is statistically unchanged.
+
+```python
+from eval_sanity import RetrievalSample, detect_regression
+
+# baseline / current: list[RetrievalSample] from two runs.
+# Generation scores are passed in by you (eval-sanity never calls a judge).
+report = detect_regression(
+    baseline, current,
+    gen_scores_baseline={"q0": 0.91, ...},   # e.g. faithfulness per query id
+    gen_scores_current={"q0": 0.90, ...},
+    k=5,
+)
+print(report)
+```
+
+Output on a synthetic silent-regression scenario (`examples/regression_demo.py`):
+
+```
+eval-sanity regression report  (k=5, n_aligned=60, resamples=10000, seed=42)
+======================================================================
+  recall@5 : 0.950 -> 0.667  (-0.283) [CI -0.417,-0.150]  [down]
+  hit@5    : 0.950 -> 0.667  (-0.283) [CI -0.417,-0.150]  [down]
+  faithfulness: 0.900 -> 0.900  (+0.000) [CI -0.005,+0.005]  [flat]
+----------------------------------------------------------------------
+  *** ALARM *** SILENT REGRESSION detected: recall@5 -0.283 [CI -0.417,-0.150],
+  faithfulness unchanged [CI -0.005,+0.005] — your dashboard won't show this.
+```
+
+It classifies every comparison into four quadrants and alarms on only one:
+
+| retrieval ↓ (CI) | generation moved (CI) | verdict | alarm |
+|---|---|---|---|
+| yes | no | **silent regression** | 🚨 |
+| yes | yes | visible regression | — |
+| no | yes | generation-only change | — |
+| no | no | stable | — |
+
+Have eval outputs on disk? `from_eval_json(baseline_path, current_path, k=5)` is a thin parser shell over `detect_regression` for JSON with a `per_query` map of `{retrieved_doc_ids, relevant_doc_ids, faithfulness}` (field names are configurable). Run the demo:
+
+```bash
+python examples/regression_demo.py
+```
+
 ## API
 
 ```python
@@ -66,6 +114,8 @@ from eval_sanity import (
     RetrievalSample,      # query + retrieved_doc_ids + relevant_doc_ids
     sanity_report,        # the audit: divergence + unreachable-threshold verdict
     oracle_ceiling,       # theoretical best proportion recall@k for a dataset
+    detect_regression,    # v0.2: silent-regression detection w/ paired-bootstrap CIs
+    from_eval_json,       # v0.2: same, from two eval-output JSON files
     # deterministic metrics, if you want the raw numbers:
     recall_at_k, hit_at_k, precision_at_1, reciprocal_rank, ndcg_at_k, aggregate,
     context_recall_docs, grounded_but_wrong_flag,
@@ -80,11 +130,16 @@ Given how many relevant docs each query has, computes the highest average propor
 
 The full audit. Compares proportion recall against `hit@k`, computes the oracle ceiling, and counts queries whose ceiling falls below `threshold` (structurally unreachable: `n_rel > k / threshold`). Read `report.headline` for the one-liner or `print(report)` for the full block.
 
-## What it is not (v0.1 scope)
+### `detect_regression(baseline, current, gen_scores_baseline, gen_scores_current, k) -> RegressionReport`
+
+Compares two runs (`list[RetrievalSample]` each) plus caller-supplied generation scores (`{query_id: float}`), aligns queries by id, and runs a paired bootstrap to put a 95% CI on each metric's delta. Returns the quadrant, the alarm flag (silent regression only), a per-query danger list sorted by recall drop, and a one-line `verdict`. `from_eval_json(...)` wraps it for JSON inputs.
+
+## What it is not
 
 - **Not an eval framework.** It scores nothing end-to-end and runs no models.
-- **No judge / faithfulness / LLM calls.** The `faithfulness` half of the grounded-but-wrong check is intentionally left for v2; the deterministic anchor (`context_recall_docs`, `grounded_but_wrong_flag`) ships here.
+- **No judge / faithfulness / LLM calls.** eval-sanity never computes a generation score — for both the v0.1 grounded-but-wrong check and the v0.2 regression detector, faithfulness is supplied by you. The deterministic anchors (`context_recall_docs`, `grounded_but_wrong_flag`) ship here.
 - **No retriever, embedder, or dataset adapters.** Bring your own ids.
+- **Zero runtime dependencies.** The paired bootstrap is pure-stdlib `random` + sorting; no numpy.
 
 ## Development
 
