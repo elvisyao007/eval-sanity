@@ -18,6 +18,3 @@ venv/
 # IDE
 .idea/
 .vscode/
-
-# Scaffolding from project init
-main.py

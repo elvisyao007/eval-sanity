@@ -25,33 +25,33 @@ Python ≥ 3.10. No runtime dependencies (stdlib only).
 ```python
 from eval_sanity import RetrievalSample, sanity_report
 
-# 20 queries: 10 single-answer, 10 multi-answer (8 relevant docs each).
+# 20 queries: 10 single-answer, 10 multi-answer (12 relevant docs each).
 # The retriever always returns a correct doc at rank 1 — genuinely useful.
 samples = [...]  # see examples/demo.py for the full synthetic set
 
-report = sanity_report(samples, k=5, threshold=0.8)
+report = sanity_report(samples, k=5, threshold=0.5)
 print(report)
 ```
 
 Output:
 
 ```
-eval-sanity report  (k=5, threshold=0.8, n=20)
+eval-sanity report  (k=5, threshold=0.5, n=20)
 ----------------------------------------------------------------
-  mean proportion recall@5 : 0.625
+  mean proportion recall@5 : 0.583
   mean hit@5                : 1.000
-  divergence (hit - recall)       : 0.375
-  oracle ceiling@5          : 0.812  (best any retriever could average)
+  divergence (hit - recall)       : 0.417
+  oracle ceiling@5          : 0.708  (best any retriever could average)
   queries capped below recall=1.0 : 10/20
   threshold unreachable for       : 10/20  (50%)
 ----------------------------------------------------------------
-  Your recall@5 >= 0.8 threshold is UNREACHABLE for 50% of queries on this
+  Your recall@5 >= 0.5 threshold is UNREACHABLE for 50% of queries on this
   dataset (10/20): they have more relevant docs than k=5 can hold, so even
   perfect retrieval fails them. hit@5 (1.00) tells the honest story;
-  proportion recall (0.62) is understating retrieval by 0.38.
+  proportion recall (0.58) is understating retrieval by 0.42.
 ```
 
-A `recall@5` of **0.62** reads as "the retriever is missing a third of the answers." eval-sanity shows the **oracle ceiling is only 0.81** — the best *any* retriever could average — and that for **half the dataset** the 0.8 threshold was never reachable. `hit@5 = 1.00` tells you the retriever actually found a correct doc for every single query.
+A `recall@5` of **0.58** reads as "the retriever is missing 40% of the answers." eval-sanity shows the **oracle ceiling is only 0.71** — the best *any* retriever could average — and that for **half the dataset** even the lenient 0.5 threshold was never reachable. `hit@5 = 1.00` tells you the retriever actually found a correct doc for every single query.
 
 Run it yourself:
 
@@ -95,4 +95,4 @@ pytest
 
 ## License
 
-MIT
+Apache-2.0

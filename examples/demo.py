@@ -17,16 +17,19 @@ from eval_sanity import RetrievalSample, oracle_ceiling, sanity_report
 
 
 def make_dataset() -> list[RetrievalSample]:
-    """20 queries at k-relevant of either 1 (single-answer) or 8 (multi-answer).
+    """20 queries at k-relevant of either 1 (single-answer) or 12 (multi-answer).
 
     The retriever always puts a correct doc at rank 1, and for multi-answer
     queries gets a second correct doc into the top-5 — genuinely useful results.
+    Twelve relevant docs is enough that with k=5 the proportion-recall ceiling
+    falls below 0.5, so the artifact shows even against the lenient 0.5 threshold
+    blog-03 uses.
     """
     samples = []
     for i in range(20):
         multi = i % 2 == 0  # half the dataset is multi-answer
         if multi:
-            relevant = {f"q{i}_doc{j}" for j in range(8)}  # 8 correct answers
+            relevant = {f"q{i}_doc{j}" for j in range(12)}  # 12 correct answers
             retrieved = [
                 f"q{i}_doc0",       # rank 1: relevant
                 f"q{i}_noise_a",
@@ -56,10 +59,10 @@ def make_dataset() -> list[RetrievalSample]:
 def main() -> None:
     samples = make_dataset()
     K = 5
-    THRESHOLD = 0.8
+    THRESHOLD = 0.5
 
     print("Dataset: 20 queries — 10 single-answer (1 relevant doc),")
-    print("         10 multi-answer (8 relevant docs each).")
+    print("         10 multi-answer (12 relevant docs each).")
     print("Retriever: always returns a correct doc at rank 1; for multi-answer")
     print("           queries a second correct doc lands in the top-5.\n")
 
