@@ -1,5 +1,7 @@
 # eval-sanity
 
+![tests](https://github.com/elvisyao007/eval-sanity/actions/workflows/test.yml/badge.svg) [![PyPI](https://img.shields.io/pypi/v/eval-sanity)](https://pypi.org/project/eval-sanity/) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 **Audit whether your RAG retrieval metrics can be trusted on a given dataset — before you trust the number on your dashboard.**
 
 eval-sanity is a tiny, zero-dependency diagnostic tool. It does **not** run models, build pipelines, or call a judge. It takes the retrieved/relevant document ids you already have and tells you whether the metric you are averaging is *structurally capable* of saying what you think it says.
