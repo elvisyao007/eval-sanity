@@ -5,6 +5,48 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.0] — 2026-06
+
+### Added
+- `trajectory_report(trajectory, spec) -> TrajectoryReport`: deterministic
+  agent trajectory audit against a declarative spec. Four checks, all
+  without LLM calls:
+  - **tool_call_correctness**: required tools present? forbidden tools avoided?
+    Score is fraction of expected tools that appear.
+  - **order_constraint_check**: precedence rules enforced — e.g. `write_back`
+    must be preceded by a `validate` call whose result has `passed=True`.
+    Returns a list of `OrderViolation` objects, one per infraction.
+  - **step_efficiency**: total steps vs optional budget; redundant calls
+    (same tool, same args) detected and reported.
+  - **task_completion**: `final_result["status"]` matched against expected?
+- `Trajectory`, `TrajectoryStep`: data-contract dataclasses matching the
+  Phase A invoice-agent trace JSON schema. `Trajectory.from_json(path)`
+  for one-line loading.
+- `TrajectorySpec`, `OrderConstraint`: declarative spec types. Separate
+  `expected_tools` (must appear), `forbidden_tools` (must not appear),
+  `order_constraints`, `max_steps`, `expected_final_status`.
+- `detect_trajectory_regression(baseline, candidate)`: compares two sets of
+  `TrajectoryReport` objects and alarms when completion_rate drops, mean
+  step count rises, or violation rate increases beyond configurable thresholds.
+  Returns a `TrajectoryRegressionReport` with per-metric deltas and a
+  verdict line. (Extends the "silent regression" concept from v0.2 to agent
+  trajectories; threshold-based rather than bootstrap-CI because trajectory
+  sets are typically small.)
+- `examples/trajectory_demo.py`: self-contained demo with four bad-trace
+  scenarios (skip validate, failed-validate write_back, redundant calls,
+  wrong tool) and a regression scenario. Accepts `--traces-dir` to load
+  real Phase A traces.
+- `onprem-llm-stack/payloads/invoice-agent/eval_trajectories.py`: dogfooding
+  script — loads all invoice-agent Phase A traces and audits them with
+  `trajectory_report`, then runs `detect_trajectory_regression` on the two
+  INV-001 runs.
+
+### Changed
+- `__version__` bumped to `"0.3.0"`.
+- No changes to v0.1/v0.2 retrieval-metric or regression-detection API.
+
+---
+
 ## [0.2.0] — 2026-05
 
 ### Added

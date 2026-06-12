@@ -136,6 +136,142 @@ The full audit. Compares proportion recall against `hit@k`, computes the oracle 
 
 Compares two runs (`list[RetrievalSample]` each) plus caller-supplied generation scores (`{query_id: float}`), aligns queries by id, and runs a paired bootstrap to put a 95% CI on each metric's delta. Returns the quadrant, the alarm flag (silent regression only), a per-query danger list sorted by recall drop, and a one-line `verdict`. `from_eval_json(...)` wraps it for JSON inputs.
 
+## Auditing agent trajectories (v0.3)
+
+eval-sanity v0.3 extends deterministic auditing from retrieval metrics to **agent
+tool-call sequences**. `trajectory_report` checks whether an agent run satisfies
+a declarative spec — zero LLM calls, zero external dependencies, bit-for-bit
+identical results across runs.
+
+The four checks:
+
+| Check | What it catches |
+|---|---|
+| `tool_call_correctness` | Required tools missing; forbidden tools called |
+| `order_constraint_check` | Precedence violations (e.g. `write_back` before `validate` passes) |
+| `step_efficiency` | Step-count budget exceeded; redundant (same tool, same args) calls |
+| `task_completion` | Final status doesn't match expected (success / flagged / error) |
+
+### Quick example: invoice-agent audit
+
+```python
+from eval_sanity import (
+    OrderConstraint, TrajectorySpec,
+    trajectory_report, detect_trajectory_regression,
+)
+from eval_sanity.trajectory import Trajectory
+
+# Spec: a valid-invoice run must extract → validate(pass) → write_back.
+spec = TrajectorySpec(
+    expected_tools=["extract_fields", "validate", "write_back"],
+    forbidden_tools=[],
+    order_constraints=[
+        OrderConstraint(
+            tool="write_back",
+            required_predecessor="validate",
+            require_pass_field="passed",  # validate must return passed=True
+        )
+    ],
+    max_steps=5,
+    expected_final_status="success",
+)
+
+# Load a trace from disk (matches Phase A invoice-agent JSON schema).
+traj = Trajectory.from_json("traces/INV-2024-001_20260612T134351.json")
+rep = trajectory_report(traj, spec)
+print(rep)
+```
+
+Output on the good trace:
+
+```
+trajectory-report  trace=7488640b-...  task=INV-2024-001
+======================================================================
+  tool_call_correctness  score=1.00
+    expected : ['extract_fields', 'validate', 'write_back']
+    called   : ['extract_fields', 'validate', 'write_back']
+  step_efficiency  steps=3 (max=5)  redundant_extra_calls=0
+  order_violations  (0)  — none
+  task_completion  expected='success'  actual='success'  [PASS]
+======================================================================
+  [PASS]  trajectory matches spec — no violations
+```
+
+Output when an agent skips validate and calls write_back directly:
+
+```
+trajectory-report  trace=demo-bad-skip  task=INV-BAD-SKIP
+======================================================================
+  tool_call_correctness  score=0.67
+    expected : ['extract_fields', 'validate', 'write_back']
+    called   : ['extract_fields', 'write_back']
+    MISSING  : ['validate']
+  step_efficiency  steps=2 (max=5)  redundant_extra_calls=0
+  order_violations  (1)
+    step 2 'write_back': no preceding 'validate' call
+  task_completion  expected='success'  actual='success'  [PASS]
+======================================================================
+  [FAIL]  missing tools ['validate']; 1 order violation(s)
+```
+
+Run the demo (synthetic bad traces + optional real traces):
+
+```bash
+python examples/trajectory_demo.py
+
+# With real Phase A traces from the invoice-agent:
+python examples/trajectory_demo.py --traces-dir /path/to/traces/
+```
+
+### Trajectory regression detection
+
+`detect_trajectory_regression` compares two sets of `TrajectoryReport` objects
+(e.g. baseline prompt vs revised prompt) and alarms when completion rate drops,
+step count rises, or violation rate increases:
+
+```python
+reg = detect_trajectory_regression(baseline_reports, candidate_reports)
+print(reg)
+```
+
+```
+trajectory-regression  baseline_n=8  candidate_n=8
+======================================================================
+  completion_rate : 1.000 -> 0.500  (-0.500)
+  mean_steps      : 3.0 -> 2.5  (-0.5)
+  redundancy_rate : 0.000 -> 0.000  (+0.000)
+  violation_rate  : 0.000 -> 0.500  (+0.500)
+======================================================================
+  *** ALARM *** TRAJECTORY REGRESSION detected: completion_rate dropped -0.500
+  (threshold -0.05); violation_rate rose +0.500 (threshold +0.10)
+```
+
+### API reference (v0.3)
+
+```python
+from eval_sanity import (
+    # Data model
+    Trajectory,        # from_dict(d) / from_json(path)
+    TrajectoryStep,
+    # Spec
+    TrajectorySpec,    # expected_tools, forbidden_tools, order_constraints, ...
+    OrderConstraint,   # tool, required_predecessor, require_pass_field
+    # Evaluation
+    trajectory_report,          # (trajectory, spec) -> TrajectoryReport
+    # Result types
+    TrajectoryReport,           # passed, tool_call_correctness, order_violations, ...
+    ToolCallCorrectness,        # score, missing_tools, forbidden_tools_called, ...
+    OrderViolation,             # tool, step_n, violation
+    RedundantCall,              # tool, step_ns, args_repr
+    StepEfficiency,             # total_steps, exceeds_max, redundant_count, ...
+    TaskCompletion,             # expected_status, actual_status, passed
+    # Regression detection
+    detect_trajectory_regression,  # (baseline, candidate) -> TrajectoryRegressionReport
+    TrajectoryRegressionReport,    # alarm, verdict, per-metric deltas
+    TrajectorySetStats,            # n, completion_rate, mean_steps, ...
+)
+```
+
 ## What it is not
 
 - **Not an eval framework.** It scores nothing end-to-end and runs no models.

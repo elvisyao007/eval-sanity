@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eval-sanity"
-version = "0.2.0"
+version = "0.3.0"
 description = "Audit whether your RAG retrieval metrics can be trusted on a given dataset."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Elvis Yao", email = "elvisyao@proton.me" }]
-keywords = ["rag", "evaluation", "retrieval", "metrics", "recall", "diagnostics"]
+keywords = ["rag", "evaluation", "retrieval", "metrics", "recall", "diagnostics", "agent", "trajectory"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

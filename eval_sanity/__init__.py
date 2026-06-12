@@ -10,6 +10,10 @@ recall* (relevant-found / relevant-total) is mechanically capped below 1.0 for
 any query with more relevant docs than your cutoff k. Averaging it then reports
 a low number that looks like a retrieval problem but is really a metric
 artifact. ``hit@k`` does not have this defect. See ``diagnose.sanity_report``.
+
+v0.3 extends eval-sanity from retrieval metrics to agent trajectory audits:
+``trajectory_report`` deterministically checks tool-call correctness, order
+constraints, step efficiency, and task completion — no LLM required.
 """
 
 from __future__ import annotations
@@ -33,13 +37,34 @@ from .regression import (
     detect_regression,
     from_eval_json,
 )
+from .trajectory import (
+    # data model
+    Trajectory,
+    TrajectoryStep,
+    # spec
+    OrderConstraint,
+    TrajectorySpec,
+    # result types
+    ToolCallCorrectness,
+    OrderViolation,
+    RedundantCall,
+    StepEfficiency,
+    TaskCompletion,
+    TrajectoryReport,
+    # evaluation
+    trajectory_report,
+    # regression detection
+    TrajectorySetStats,
+    TrajectoryRegressionReport,
+    detect_trajectory_regression,
+)
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
-    # data model
+    # data model — retrieval
     "RetrievalSample",
-    # deterministic metrics
+    # deterministic retrieval metrics
     "recall_at_k",
     "precision_at_1",
     "reciprocal_rank",
@@ -48,16 +73,31 @@ __all__ = [
     "aggregate",
     "context_recall_docs",
     "grounded_but_wrong_flag",
-    # diagnostics
+    # retrieval diagnostics
     "oracle_ceiling",
     "sanity_report",
     "OracleCeiling",
     "SanityReport",
-    # regression detection (v0.2)
+    # retrieval regression detection (v0.2)
     "detect_regression",
     "from_eval_json",
     "RegressionReport",
     "MetricDelta",
     "PerQueryDelta",
+    # trajectory evaluation (v0.3)
+    "Trajectory",
+    "TrajectoryStep",
+    "OrderConstraint",
+    "TrajectorySpec",
+    "ToolCallCorrectness",
+    "OrderViolation",
+    "RedundantCall",
+    "StepEfficiency",
+    "TaskCompletion",
+    "TrajectoryReport",
+    "trajectory_report",
+    "TrajectorySetStats",
+    "TrajectoryRegressionReport",
+    "detect_trajectory_regression",
     "__version__",
 ]
