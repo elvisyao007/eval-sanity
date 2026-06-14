@@ -13,8 +13,6 @@ Invoice-agent specs used throughout:
   FLAGGED_SPEC   — invalid invoice: extract → validate(fail), no write_back
 """
 
-import pytest
-
 from eval_sanity import (
     OrderConstraint,
     TrajectorySpec,
@@ -23,7 +21,6 @@ from eval_sanity import (
 )
 from eval_sanity.trajectory import (
     Trajectory,
-    TrajectoryReport,
     TrajectoryStep,
 )
 
