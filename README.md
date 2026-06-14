@@ -6,13 +6,18 @@
 
 eval-sanity is a tiny, zero-dependency diagnostic tool. It does **not** run models, build pipelines, or call a judge. It takes the retrieved/relevant document ids you already have and tells you whether the metric you are averaging is *structurally capable* of saying what you think it says.
 
+> **Three deterministic audits — no LLM calls, no runtime dependencies:**
+> - [Retrieval metric trustworthiness](#the-problem-it-catches) — exposes when recall@k is structurally capped below your threshold regardless of retriever quality
+> - [Silent regression detection](#detecting-silent-regressions-v02) — catches retrieval drops your faithfulness dashboard hides, with paired-bootstrap confidence intervals
+> - [Agent trajectory audit](#auditing-agent-trajectories-v03) — verifies tool-call sequences against a declarative spec, bit-for-bit repeatable
+
 ## The problem it catches
 
 The most common retrieval metric, **proportion recall@k** (`relevant-found / relevant-total`), has a mechanical ceiling: a query with `n_rel` relevant documents can put at most `min(k, n_rel)` of them in the top-k. When `n_rel > k`, the best possible recall is `k / n_rel < 1.0` — *no matter how good your retriever is*.
 
 On a multi-answer dataset this means your averaged recall can look like a retrieval failure when it is really a **metric artifact**. `hit@k` (did *any* relevant doc land in the top-k?) does not have this defect. eval-sanity makes the gap between the two visible and tells you, in one sentence, what fraction of your dataset cannot pass your threshold even under perfect retrieval.
 
-> This is the productized version of a finding from blog-03 ([https://dev.to/elvisyao007/the-33-grounded-but-wrong-answers-were-a-metric-artifact-how-id-based-context-recall-lies-on-ghg]): on a multi-answer Japanese QA set, ~1/3 of queries were structurally unable to clear a recall threshold that *perfect* retrieval could not have cleared.
+> This is the productized version of a finding from [blog-03](https://dev.to/elvisyao007/the-33-grounded-but-wrong-answers-were-a-metric-artifact-how-id-based-context-recall-lies-on-ghg): on a multi-answer Japanese QA set, ~1/3 of queries were structurally unable to clear a recall threshold that *perfect* retrieval could not have cleared.
 
 ## Install
 

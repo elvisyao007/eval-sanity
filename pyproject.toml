@@ -26,14 +26,24 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "ruff>=0.4"]
 
 [project.urls]
-Homepage = "https://github.com/elvisyao/eval-sanity"
-Motivation = "https://example.com/[BLOG-03-URL]"
+Homepage = "https://github.com/elvisyao007/eval-sanity"
+Repository = "https://github.com/elvisyao007/eval-sanity"
+Changelog = "https://github.com/elvisyao007/eval-sanity/blob/main/CHANGELOG.md"
+Motivation = "https://dev.to/elvisyao007/the-33-grounded-but-wrong-answers-were-a-metric-artifact-how-id-based-context-recall-lies-on-ghg"
 
 [tool.setuptools.packages.find]
 include = ["eval_sanity*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["E501"]
